@@ -50,3 +50,4 @@ Also includes two standalone CLIs:
 - `check_industry.py` — single-window CLI (edit `START_DATE`/`END_DATE` and run).
 - `send_custom_robot_group_message.py` — ad-hoc DingTalk CLI with @-mention support.
 - `render.yaml` — Render cron service config.
+# industry_checker_dingtalk_bot
