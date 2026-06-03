@@ -1,4 +1,4 @@
-"""DingTalk client: send a text message to a custom robot webhook (signed or unsigned)."""
+"""DingTalk client: send a markdown message to a custom robot webhook (signed or unsigned)."""
 import base64
 import hashlib
 import hmac
@@ -8,8 +8,11 @@ import urllib.parse
 import requests
 
 
-def send_message(access_token: str, secret: str | None, msg: str) -> dict:
-    """Send a text message to a DingTalk custom robot. Returns parsed response JSON.
+def send_message(access_token: str, secret: str | None, msg: str, title: str = "Industry Report") -> dict:
+    """Send a markdown message to a DingTalk custom robot. Returns parsed response JSON.
+
+    The `msg` is the markdown body (use ``` ``` for monospace blocks). `title`
+    appears in chat-list previews and notifications, not in the message body.
 
     If secret is provided, signs the request with HMAC-SHA256. If secret is empty
     or None, posts unsigned — use this when the robot is secured by keyword match
@@ -33,7 +36,7 @@ def send_message(access_token: str, secret: str | None, msg: str) -> dict:
     else:
         url = f"https://oapi.dingtalk.com/robot/send?access_token={access_token}"
 
-    body = {"msgtype": "text", "text": {"content": msg}}
+    body = {"msgtype": "markdown", "markdown": {"title": title, "text": msg}}
 
     resp = requests.post(url, json=body, headers={"Content-Type": "application/json"}, timeout=30)
     if resp.status_code != 200:

@@ -61,12 +61,12 @@ def build_report_message(now_sgt: datetime) -> str:
         if i > 0 and (start_ms, end_ms) == first_bounds:
             continue
         if start_ms is None or end_ms is None:
-            sections.append(f"=== {label} ===\n(week just started — no data yet)")
+            sections.append(f"**{label}**\n\n_(week just started — no data yet)_")
             continue
         contacts = fetch_contacts(start_ms, end_ms, ["your_industry"])
         summary = summarize_industry(contacts)
         sections.append(format_section(label, summary))
-    return "\n\n".join(sections)
+    return "\n\n&nbsp;\n\n".join(sections)
 
 
 def main() -> int:

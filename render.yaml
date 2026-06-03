@@ -6,6 +6,8 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python daily_report.py
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
       - key: HUBSPOT_PRIVATE_APP_TOKEN
         sync: false
       - key: DINGTALK_ACCESS_TOKEN

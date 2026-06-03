@@ -76,7 +76,7 @@ def test_build_report_message_full_flow(monkeypatch):
         message = build_report_message(now_sgt)
 
     assert fetch.call_count == 2
-    assert message.index("=== 2026-06-02 ===") < message.index("=== WTD ===")
+    assert message.index("**2026-06-02**") < message.index("**WTD**")
     assert "Manufacturing" in message
 
 
@@ -88,7 +88,7 @@ def test_build_report_message_handles_invalid_wtd(monkeypatch):
         message = build_report_message(now_sgt)
 
     assert fetch.call_count == 1
-    assert "=== WTD ===" in message
+    assert "**WTD**" in message
     assert "(week just started — no data yet)" in message
 
 
@@ -106,7 +106,7 @@ def test_build_report_message_skips_wtd_when_same_as_yesterday(monkeypatch):
         message = build_report_message(now_sgt)
 
     assert fetch.call_count == 1
-    assert "=== 2026-06-01 ===" in message
+    assert "**2026-06-01**" in message
     assert "WTD" not in message
 
 

@@ -25,8 +25,9 @@ def test_send_message_signs_request():
     assert "sign" in params and len(params["sign"][0]) > 0
 
     body = call.kwargs["json"]
-    assert body["msgtype"] == "text"
-    assert body["text"] == {"content": "hello group"}
+    assert body["msgtype"] == "markdown"
+    assert body["markdown"]["text"] == "hello group"
+    assert body["markdown"]["title"]  # any non-empty title
 
 
 def test_send_message_unsigned_when_no_secret():

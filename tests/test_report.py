@@ -15,17 +15,15 @@ def test_format_section_with_data():
     text = format_section("2026-06-02", summary)
     lines = text.splitlines()
 
-    assert lines[0] == "=== 2026-06-02 ==="
-    assert lines[1] == "Total contacts with industry: 11"
-    assert lines[2] == ""
-    assert lines[3].startswith("Manufacturing")
-    assert "5" in lines[3]
-    assert "45.5%" in lines[3]
-    assert lines[-1].startswith("Logistics")
-    assert "9.1%" in lines[-1]
+    assert lines[0] == "**2026-06-02**"
+    assert lines[1] == ""
+    assert lines[2] == "Total contacts with industry: **11**"
+    assert lines[3] == ""
+    assert lines[4] == "- Manufacturing: 5 (45.5%)"
+    assert lines[-1] == "- Logistics: 1 (9.1%)"
 
 
 def test_format_section_empty():
     summary = {"total": 0, "with_industry": 0, "distribution": []}
     text = format_section("2026-06-02", summary)
-    assert text == "=== 2026-06-02 ===\n(no contacts in this window)"
+    assert text == "**2026-06-02**\n\n_(no contacts in this window)_"
