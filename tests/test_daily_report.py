@@ -47,3 +47,47 @@ def test_compute_windows_monday_morning():
     assert wtd[0] == "WTD"
     assert wtd[1] is None
     assert wtd[2] is None
+
+
+from unittest.mock import patch
+
+from daily_report import build_report_message
+
+
+def test_build_report_message_full_flow(monkeypatch):
+    monkeypatch.setenv("HUBSPOT_PRIVATE_APP_TOKEN", "fake")
+
+    yesterday_contacts = [
+        {"your_industry": "Manufacturing"},
+        {"your_industry": "F&B"},
+    ]
+    wtd_contacts = [
+        {"your_industry": "Manufacturing"},
+        {"your_industry": "Manufacturing"},
+        {"your_industry": "F&B"},
+    ]
+
+    now_sgt = datetime(2026, 6, 3, 9, 0, tzinfo=SGT)
+    with patch(
+        "daily_report.fetch_contacts",
+        side_effect=[yesterday_contacts, wtd_contacts],
+    ) as fetch:
+        message = build_report_message(now_sgt)
+
+    assert fetch.call_count == 2
+    assert message.index("=== Industry breakdown: 2026-06-02 (yesterday) ===") < message.index(
+        "=== Industry breakdown: 2026-06-01 to 2026-06-02 (WTD) ==="
+    )
+    assert "Manufacturing" in message
+
+
+def test_build_report_message_handles_invalid_wtd(monkeypatch):
+    monkeypatch.setenv("HUBSPOT_PRIVATE_APP_TOKEN", "fake")
+
+    now_sgt = datetime(2026, 6, 8, 9, 0, tzinfo=SGT)  # Monday
+    with patch("daily_report.fetch_contacts", return_value=[]) as fetch:
+        message = build_report_message(now_sgt)
+
+    assert fetch.call_count == 1
+    assert "=== Industry breakdown: WTD ===" in message
+    assert "(week just started — no data yet)" in message

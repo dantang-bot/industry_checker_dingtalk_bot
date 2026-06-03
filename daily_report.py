@@ -6,10 +6,20 @@ Computes yesterday + WTD (Mon → yesterday) windows in SGT, fetches HubSpot
 contacts in each window, summarizes industry distribution, and posts the
 combined report to a DingTalk group via signed webhook.
 """
+import os
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from dotenv import load_dotenv
+
+from dingtalk_client import send_message
+from hubspot_client import fetch_contacts, summarize_industry
+from report import format_section
+
 SGT = ZoneInfo("Asia/Singapore")
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 def _sgt_day_bounds_ms(d: datetime) -> tuple[int, int]:
@@ -44,3 +54,42 @@ def compute_windows(now_sgt: datetime) -> list[tuple[str, int | None, int | None
         wtd_window = (label, w_start, w_end)
 
     return [yesterday_window, wtd_window]
+
+
+def build_report_message(now_sgt: datetime) -> str:
+    """Compute windows, fetch + summarize each, return joined report text."""
+    sections: list[str] = []
+    for label, start_ms, end_ms in compute_windows(now_sgt):
+        if start_ms is None or end_ms is None:
+            sections.append(
+                f"=== Industry breakdown: {label} ===\n(week just started — no data yet)"
+            )
+            continue
+        contacts = fetch_contacts(start_ms, end_ms, ["your_industry"])
+        summary = summarize_industry(contacts)
+        sections.append(format_section(label, summary))
+    return "\n\n".join(sections)
+
+
+def main() -> int:
+    load_dotenv(SCRIPT_DIR / ".env")
+
+    dingtalk_token = os.environ.get("DINGTALK_ACCESS_TOKEN")
+    dingtalk_secret = os.environ.get("DINGTALK_SECRET")
+    if not dingtalk_token:
+        raise RuntimeError("DINGTALK_ACCESS_TOKEN is not set")
+    if not dingtalk_secret:
+        raise RuntimeError("DINGTALK_SECRET is not set")
+
+    now_sgt = datetime.now(SGT)
+    message = build_report_message(now_sgt)
+
+    print(message)
+    print("---", flush=True)
+    send_message(dingtalk_token, dingtalk_secret, message)
+    print("Posted to DingTalk.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
