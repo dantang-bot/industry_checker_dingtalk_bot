@@ -1,4 +1,4 @@
-"""DingTalk client: send a signed text message to a custom robot webhook."""
+"""DingTalk client: send a text message to a custom robot webhook (signed or unsigned)."""
 import base64
 import hashlib
 import hmac
@@ -8,24 +8,31 @@ import urllib.parse
 import requests
 
 
-def send_message(access_token: str, secret: str, msg: str) -> dict:
+def send_message(access_token: str, secret: str | None, msg: str) -> dict:
     """Send a text message to a DingTalk custom robot. Returns parsed response JSON.
+
+    If secret is provided, signs the request with HMAC-SHA256. If secret is empty
+    or None, posts unsigned — use this when the robot is secured by keyword match
+    or IP whitelist instead of signing.
 
     Raises RuntimeError on non-2xx HTTP or non-zero DingTalk errcode.
     """
-    timestamp = str(round(time.time() * 1000))
-    string_to_sign = f"{timestamp}\n{secret}"
-    hmac_code = hmac.new(
-        secret.encode("utf-8"),
-        string_to_sign.encode("utf-8"),
-        digestmod=hashlib.sha256,
-    ).digest()
-    sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
+    if secret:
+        timestamp = str(round(time.time() * 1000))
+        string_to_sign = f"{timestamp}\n{secret}"
+        hmac_code = hmac.new(
+            secret.encode("utf-8"),
+            string_to_sign.encode("utf-8"),
+            digestmod=hashlib.sha256,
+        ).digest()
+        sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
+        url = (
+            f"https://oapi.dingtalk.com/robot/send"
+            f"?access_token={access_token}&timestamp={timestamp}&sign={sign}"
+        )
+    else:
+        url = f"https://oapi.dingtalk.com/robot/send?access_token={access_token}"
 
-    url = (
-        f"https://oapi.dingtalk.com/robot/send"
-        f"?access_token={access_token}&timestamp={timestamp}&sign={sign}"
-    )
     body = {"msgtype": "text", "text": {"content": msg}}
 
     resp = requests.post(url, json=body, headers={"Content-Type": "application/json"}, timeout=30)

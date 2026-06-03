@@ -29,6 +29,21 @@ def test_send_message_signs_request():
     assert body["text"] == {"content": "hello group"}
 
 
+def test_send_message_unsigned_when_no_secret():
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"errcode": 0, "errmsg": "ok"}
+
+    with patch("dingtalk_client.requests.post", return_value=mock_resp) as post:
+        send_message("token-abc", None, "hello")
+
+    url = post.call_args.args[0]
+    params = parse_qs(urlparse(url).query)
+    assert params["access_token"] == ["token-abc"]
+    assert "timestamp" not in params
+    assert "sign" not in params
+
+
 def test_send_message_raises_on_errcode():
     mock_resp = MagicMock()
     mock_resp.status_code = 200

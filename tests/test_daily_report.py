@@ -118,5 +118,6 @@ def test_main_requires_hubspot_token(monkeypatch):
     monkeypatch.delenv("HUBSPOT_PRIVATE_APP_TOKEN", raising=False)
 
     from daily_report import main
-    with pytest.raises(RuntimeError, match="HUBSPOT_PRIVATE_APP_TOKEN"):
-        main()
+    with patch("daily_report.load_dotenv"):
+        with pytest.raises(RuntimeError, match="HUBSPOT_PRIVATE_APP_TOKEN"):
+            main()

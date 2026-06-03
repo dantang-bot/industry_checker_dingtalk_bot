@@ -79,12 +79,10 @@ def main() -> int:
     load_dotenv(SCRIPT_DIR / ".env")
 
     dingtalk_token = os.environ.get("DINGTALK_ACCESS_TOKEN")
-    dingtalk_secret = os.environ.get("DINGTALK_SECRET")
+    dingtalk_secret = os.environ.get("DINGTALK_SECRET") or None
     hubspot_token = os.environ.get("HUBSPOT_PRIVATE_APP_TOKEN")
     if not dingtalk_token:
         raise RuntimeError("DINGTALK_ACCESS_TOKEN is not set")
-    if not dingtalk_secret:
-        raise RuntimeError("DINGTALK_SECRET is not set")
     if not hubspot_token:
         raise RuntimeError("HUBSPOT_PRIVATE_APP_TOKEN is not set")
 
