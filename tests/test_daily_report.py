@@ -20,11 +20,11 @@ def test_compute_windows_midweek():
     assert len(windows) == 2
     yesterday, wtd = windows
 
-    assert yesterday[0] == "2026-06-02 (yesterday)"
+    assert yesterday[0] == "2026-06-02"
     assert yesterday[1] == _sgt_ms(2026, 6, 2, 0, 0, 0, 0)
     assert yesterday[2] == _sgt_ms(2026, 6, 2, 23, 59, 59, 999)
 
-    assert wtd[0] == "2026-06-01 to 2026-06-02 (WTD)"
+    assert wtd[0] == "WTD"
     assert wtd[1] == _sgt_ms(2026, 6, 1, 0, 0, 0, 0)
     assert wtd[2] == _sgt_ms(2026, 6, 2, 23, 59, 59, 999)
 
@@ -32,7 +32,7 @@ def test_compute_windows_midweek():
 def test_compute_windows_tuesday_single_day_wtd():
     now_sgt = datetime(2026, 6, 2, 9, 0, tzinfo=SGT)  # Tue
     _, wtd = compute_windows(now_sgt)
-    assert wtd[0] == "2026-06-01 (WTD)"
+    assert wtd[0] == "WTD"
     assert wtd[1] == _sgt_ms(2026, 6, 1, 0, 0, 0, 0)
     assert wtd[2] == _sgt_ms(2026, 6, 1, 23, 59, 59, 999)
 
@@ -41,7 +41,7 @@ def test_compute_windows_monday_morning():
     now_sgt = datetime(2026, 6, 8, 9, 0, tzinfo=SGT)  # Mon
     yesterday, wtd = compute_windows(now_sgt)
 
-    assert yesterday[0] == "2026-06-07 (yesterday)"
+    assert yesterday[0] == "2026-06-07"
     assert yesterday[1] == _sgt_ms(2026, 6, 7, 0, 0, 0, 0)
     assert yesterday[2] == _sgt_ms(2026, 6, 7, 23, 59, 59, 999)
 
@@ -76,9 +76,7 @@ def test_build_report_message_full_flow(monkeypatch):
         message = build_report_message(now_sgt)
 
     assert fetch.call_count == 2
-    assert message.index("=== Industry breakdown: 2026-06-02 (yesterday) ===") < message.index(
-        "=== Industry breakdown: 2026-06-01 to 2026-06-02 (WTD) ==="
-    )
+    assert message.index("=== 2026-06-02 ===") < message.index("=== WTD ===")
     assert "Manufacturing" in message
 
 
@@ -90,7 +88,7 @@ def test_build_report_message_handles_invalid_wtd(monkeypatch):
         message = build_report_message(now_sgt)
 
     assert fetch.call_count == 1
-    assert "=== Industry breakdown: WTD ===" in message
+    assert "=== WTD ===" in message
     assert "(week just started — no data yet)" in message
 
 
@@ -108,8 +106,8 @@ def test_build_report_message_skips_wtd_when_same_as_yesterday(monkeypatch):
         message = build_report_message(now_sgt)
 
     assert fetch.call_count == 1
-    assert "(yesterday)" in message
-    assert "(WTD)" not in message
+    assert "=== 2026-06-01 ===" in message
+    assert "WTD" not in message
 
 
 def test_main_requires_hubspot_token(monkeypatch):

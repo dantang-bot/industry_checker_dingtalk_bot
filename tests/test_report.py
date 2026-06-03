@@ -12,24 +12,20 @@ def test_format_section_with_data():
             {"name": "Logistics", "count": 1, "percent": 9.10},
         ],
     }
-    text = format_section("2026-06-02 (yesterday)", summary)
+    text = format_section("2026-06-02", summary)
     lines = text.splitlines()
 
-    assert lines[0] == "=== Industry breakdown: 2026-06-02 (yesterday) ==="
-    assert lines[1] == "Total contacts created: 14"
-    assert lines[2] == "With industry filled:   11"
-    assert lines[3] == ""
-    assert "Manufacturing" in lines[4]
-    assert "5" in lines[4]
-    assert "45.5%" in lines[4]
-    assert "Logistics" in lines[-1]
+    assert lines[0] == "=== 2026-06-02 ==="
+    assert lines[1] == "Total contacts with industry: 11"
+    assert lines[2] == ""
+    assert lines[3].startswith("Manufacturing")
+    assert "5" in lines[3]
+    assert "45.5%" in lines[3]
+    assert lines[-1].startswith("Logistics")
     assert "9.1%" in lines[-1]
 
 
 def test_format_section_empty():
     summary = {"total": 0, "with_industry": 0, "distribution": []}
-    text = format_section("2026-06-02 (yesterday)", summary)
-    assert text == (
-        "=== Industry breakdown: 2026-06-02 (yesterday) ===\n"
-        "(no contacts in this window)"
-    )
+    text = format_section("2026-06-02", summary)
+    assert text == "=== 2026-06-02 ===\n(no contacts in this window)"

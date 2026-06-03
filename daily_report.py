@@ -39,7 +39,7 @@ def compute_windows(now_sgt: datetime) -> list[tuple[str, int | None, int | None
     yesterday = today - timedelta(days=1)
 
     y_start, y_end = _sgt_day_bounds_ms(yesterday)
-    yesterday_window = (f"{yesterday.date().isoformat()} (yesterday)", y_start, y_end)
+    yesterday_window = (yesterday.date().isoformat(), y_start, y_end)
 
     monday_of_week = today - timedelta(days=today.weekday())
     if monday_of_week > yesterday:
@@ -47,11 +47,7 @@ def compute_windows(now_sgt: datetime) -> list[tuple[str, int | None, int | None
     else:
         w_start, _ = _sgt_day_bounds_ms(monday_of_week)
         _, w_end = _sgt_day_bounds_ms(yesterday)
-        if monday_of_week.date() == yesterday.date():
-            label = f"{yesterday.date().isoformat()} (WTD)"
-        else:
-            label = f"{monday_of_week.date().isoformat()} to {yesterday.date().isoformat()} (WTD)"
-        wtd_window = (label, w_start, w_end)
+        wtd_window = ("WTD", w_start, w_end)
 
     return [yesterday_window, wtd_window]
 
@@ -65,9 +61,7 @@ def build_report_message(now_sgt: datetime) -> str:
         if i > 0 and (start_ms, end_ms) == first_bounds:
             continue
         if start_ms is None or end_ms is None:
-            sections.append(
-                f"=== Industry breakdown: {label} ===\n(week just started — no data yet)"
-            )
+            sections.append(f"=== {label} ===\n(week just started — no data yet)")
             continue
         contacts = fetch_contacts(start_ms, end_ms, ["your_industry"])
         summary = summarize_industry(contacts)
