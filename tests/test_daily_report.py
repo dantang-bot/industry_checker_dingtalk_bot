@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -91,3 +92,31 @@ def test_build_report_message_handles_invalid_wtd(monkeypatch):
     assert fetch.call_count == 1
     assert "=== Industry breakdown: WTD ===" in message
     assert "(week just started — no data yet)" in message
+
+
+def test_build_report_message_skips_wtd_when_same_as_yesterday(monkeypatch):
+    """On Tuesdays, WTD window equals yesterday window — skip the duplicate section."""
+    monkeypatch.setenv("HUBSPOT_PRIVATE_APP_TOKEN", "fake")
+
+    monday_contacts = [
+        {"your_industry": "Manufacturing"},
+        {"your_industry": "F&B"},
+    ]
+
+    now_sgt = datetime(2026, 6, 2, 9, 0, tzinfo=SGT)  # Tuesday
+    with patch("daily_report.fetch_contacts", return_value=monday_contacts) as fetch:
+        message = build_report_message(now_sgt)
+
+    assert fetch.call_count == 1
+    assert "(yesterday)" in message
+    assert "(WTD)" not in message
+
+
+def test_main_requires_hubspot_token(monkeypatch):
+    monkeypatch.setenv("DINGTALK_ACCESS_TOKEN", "x")
+    monkeypatch.setenv("DINGTALK_SECRET", "y")
+    monkeypatch.delenv("HUBSPOT_PRIVATE_APP_TOKEN", raising=False)
+
+    from daily_report import main
+    with pytest.raises(RuntimeError, match="HUBSPOT_PRIVATE_APP_TOKEN"):
+        main()

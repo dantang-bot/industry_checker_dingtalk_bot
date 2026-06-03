@@ -59,7 +59,11 @@ def compute_windows(now_sgt: datetime) -> list[tuple[str, int | None, int | None
 def build_report_message(now_sgt: datetime) -> str:
     """Compute windows, fetch + summarize each, return joined report text."""
     sections: list[str] = []
-    for label, start_ms, end_ms in compute_windows(now_sgt):
+    windows = compute_windows(now_sgt)
+    first_bounds = (windows[0][1], windows[0][2]) if windows else None
+    for i, (label, start_ms, end_ms) in enumerate(windows):
+        if i > 0 and (start_ms, end_ms) == first_bounds:
+            continue
         if start_ms is None or end_ms is None:
             sections.append(
                 f"=== Industry breakdown: {label} ===\n(week just started — no data yet)"
@@ -76,10 +80,13 @@ def main() -> int:
 
     dingtalk_token = os.environ.get("DINGTALK_ACCESS_TOKEN")
     dingtalk_secret = os.environ.get("DINGTALK_SECRET")
+    hubspot_token = os.environ.get("HUBSPOT_PRIVATE_APP_TOKEN")
     if not dingtalk_token:
         raise RuntimeError("DINGTALK_ACCESS_TOKEN is not set")
     if not dingtalk_secret:
         raise RuntimeError("DINGTALK_SECRET is not set")
+    if not hubspot_token:
+        raise RuntimeError("HUBSPOT_PRIVATE_APP_TOKEN is not set")
 
     now_sgt = datetime.now(SGT)
     message = build_report_message(now_sgt)
