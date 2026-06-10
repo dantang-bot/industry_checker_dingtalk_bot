@@ -1,25 +1,47 @@
 """HubSpot client: fetch contacts in a date window and summarize industry distribution."""
 import os
-from collections import Counter
 
 import requests
+
+
+_INDUSTRY_BUCKETS: dict[str, str] = {
+    "F&B": "F&B",
+    "Restaurant / Café": "F&B",
+    "Bakery / Beverage / Dessert": "F&B",
+    "Food Stall / Hawker": "F&B",
+    "Retail": "Retail",
+    "Minimart": "Retail",
+    "Others": "Others",
+    "Services": "Others",
+    "Hair Salon": "Others",
+}
+
+_BUCKET_ORDER: tuple[str, ...] = ("F&B", "Retail", "Others")
 
 
 def summarize_industry(contacts: list[dict]) -> dict:
     """Return {total, with_industry, distribution: [{name, count, percent}, ...]}.
 
-    Percentages are over with_industry, not total. Distribution sorted desc by count.
+    Raw `your_industry` values are mapped into 3 buckets — F&B, Retail, Others —
+    via `_INDUSTRY_BUCKETS`. Unknown values fall through to Others. Percentages
+    are over with_industry, not total. Distribution is in fixed bucket order;
+    zero-count buckets are still included so the report shape is stable.
+    Empty input returns an empty distribution.
     """
     with_industry = [c for c in contacts if (c.get("your_industry") or "").strip()]
-    counter = Counter((c.get("your_industry") or "").strip() for c in with_industry)
+    counts: dict[str, int] = {b: 0 for b in _BUCKET_ORDER}
+    for c in with_industry:
+        raw = (c.get("your_industry") or "").strip()
+        bucket = _INDUSTRY_BUCKETS.get(raw, "Others")
+        counts[bucket] += 1
     distribution = [
         {
-            "name": name,
-            "count": count,
-            "percent": count / len(with_industry) * 100 if with_industry else 0,
+            "name": bucket,
+            "count": counts[bucket],
+            "percent": counts[bucket] / len(with_industry) * 100 if with_industry else 0.0,
         }
-        for name, count in counter.most_common()
-    ]
+        for bucket in _BUCKET_ORDER
+    ] if with_industry else []
     return {
         "total": len(contacts),
         "with_industry": len(with_industry),

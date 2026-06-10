@@ -4,18 +4,19 @@ from unittest.mock import MagicMock, patch
 from hubspot_client import summarize_industry, fetch_contacts
 
 
-def test_summarize_industry_basic():
+def test_summarize_industry_basic_buckets():
     contacts = [
-        {"your_industry": "Manufacturing"},
-        {"your_industry": "Manufacturing"},
         {"your_industry": "F&B"},
+        {"your_industry": "Restaurant / Café"},
+        {"your_industry": "Retail"},
     ]
     result = summarize_industry(contacts)
     assert result["total"] == 3
     assert result["with_industry"] == 3
     assert result["distribution"] == [
-        {"name": "Manufacturing", "count": 2, "percent": pytest.approx(66.666, rel=1e-3)},
-        {"name": "F&B", "count": 1, "percent": pytest.approx(33.333, rel=1e-3)},
+        {"name": "F&B", "count": 2, "percent": pytest.approx(66.666, rel=1e-3)},
+        {"name": "Retail", "count": 1, "percent": pytest.approx(33.333, rel=1e-3)},
+        {"name": "Others", "count": 0, "percent": 0},
     ]
 
 
@@ -26,14 +27,16 @@ def test_summarize_industry_strips_whitespace():
     ]
     result = summarize_industry(contacts)
     assert result["with_industry"] == 2
-    assert len(result["distribution"]) == 1
-    assert result["distribution"][0]["name"] == "F&B"
-    assert result["distribution"][0]["count"] == 2
+    assert result["distribution"] == [
+        {"name": "F&B", "count": 2, "percent": 100.0},
+        {"name": "Retail", "count": 0, "percent": 0},
+        {"name": "Others", "count": 0, "percent": 0},
+    ]
 
 
 def test_summarize_industry_excludes_blank():
     contacts = [
-        {"your_industry": "Manufacturing"},
+        {"your_industry": "F&B"},
         {"your_industry": ""},
         {"your_industry": None},
         {},
@@ -42,7 +45,9 @@ def test_summarize_industry_excludes_blank():
     assert result["total"] == 4
     assert result["with_industry"] == 1
     assert result["distribution"] == [
-        {"name": "Manufacturing", "count": 1, "percent": 100.0},
+        {"name": "F&B", "count": 1, "percent": 100.0},
+        {"name": "Retail", "count": 0, "percent": 0},
+        {"name": "Others", "count": 0, "percent": 0},
     ]
 
 
@@ -89,3 +94,65 @@ def test_fetch_contacts_pagination(monkeypatch):
     assert "after" not in first_call_payload
     second_call_payload = post.call_args_list[1].kwargs["json"]
     assert second_call_payload["after"] == "cursor-2"
+
+
+def test_summarize_industry_buckets_fnb_values():
+    contacts = [
+        {"your_industry": "F&B"},
+        {"your_industry": "Restaurant / Café"},
+        {"your_industry": "Bakery / Beverage / Dessert"},
+        {"your_industry": "Food Stall / Hawker"},
+    ]
+    result = summarize_industry(contacts)
+    fnb_row = next(r for r in result["distribution"] if r["name"] == "F&B")
+    assert fnb_row["count"] == 4
+    assert fnb_row["percent"] == 100.0
+
+
+def test_summarize_industry_buckets_retail_values():
+    contacts = [
+        {"your_industry": "Retail"},
+        {"your_industry": "Minimart"},
+    ]
+    result = summarize_industry(contacts)
+    retail_row = next(r for r in result["distribution"] if r["name"] == "Retail")
+    assert retail_row["count"] == 2
+    assert retail_row["percent"] == 100.0
+
+
+def test_summarize_industry_buckets_others_values():
+    contacts = [
+        {"your_industry": "Others"},
+        {"your_industry": "Services"},
+        {"your_industry": "Hair Salon"},
+    ]
+    result = summarize_industry(contacts)
+    others_row = next(r for r in result["distribution"] if r["name"] == "Others")
+    assert others_row["count"] == 3
+    assert others_row["percent"] == 100.0
+
+
+def test_summarize_industry_unknown_values_fall_into_others():
+    contacts = [
+        {"your_industry": "Manufacturing"},
+        {"your_industry": "Logistics"},
+        {"your_industry": "F&B"},
+    ]
+    result = summarize_industry(contacts)
+    assert result["distribution"] == [
+        {"name": "F&B", "count": 1, "percent": pytest.approx(33.333, rel=1e-3)},
+        {"name": "Retail", "count": 0, "percent": 0},
+        {"name": "Others", "count": 2, "percent": pytest.approx(66.666, rel=1e-3)},
+    ]
+
+
+def test_summarize_industry_distribution_order_is_fixed():
+    contacts = [
+        {"your_industry": "Services"},
+        {"your_industry": "Services"},
+        {"your_industry": "Services"},
+        {"your_industry": "F&B"},
+    ]
+    result = summarize_industry(contacts)
+    names = [row["name"] for row in result["distribution"]]
+    assert names == ["F&B", "Retail", "Others"]
