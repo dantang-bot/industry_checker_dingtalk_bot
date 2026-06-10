@@ -77,7 +77,9 @@ def test_build_report_message_full_flow(monkeypatch):
 
     assert fetch.call_count == 2
     assert message.index("**2026-06-02**") < message.index("**WTD**")
-    assert "Manufacturing" in message
+    assert "F&B" in message
+    assert "Others" in message
+    assert "Manufacturing" not in message
 
 
 def test_build_report_message_handles_invalid_wtd(monkeypatch):
